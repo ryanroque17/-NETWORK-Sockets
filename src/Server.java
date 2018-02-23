@@ -91,6 +91,9 @@ public class Server {
 				// writer from the sets, and close its socket.
 				if (name != null) {
 					names.remove(name);
+					for (PrintWriter writer : writers) {
+						writer.println("ONLINELIST " + names.toString());
+					}
 				}
 				if (out != null) {
 					writers.remove(out);

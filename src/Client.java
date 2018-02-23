@@ -27,7 +27,7 @@ public class Client {
 	private JFrame frame;
 	private JTextField messageField;
 	private JTable onlineTable;
-	private JButton sendButton;
+	private JButton sendButton, chatButton;
 	private JTextArea groupChat;
 	private JLabel nameLabel;
 	private DefaultTableModel model;
@@ -77,17 +77,32 @@ public class Client {
 		nameLabel.setFont(new Font("Tahoma", Font.BOLD, 16));
 		nameLabel.setBounds(25, 11, 126, 14);
 		frame.getContentPane().add(nameLabel);
-
+		
+		chatButton = new JButton("Chat");
+		chatButton.setForeground(new Color(255, 255, 255));
+		chatButton.setBackground(new Color(25, 25, 112));
+		chatButton.setBounds(446, 233, 95, 28);
+		chatButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				int row = onlineTable.getSelectedRow();
+				
+				System.out.println("row: " + row);
+			}
+		});
+		frame.getContentPane().add(chatButton);
+		
 		model = new DefaultTableModel(); 
 		onlineTable = new JTable(model);
 		onlineTable.setBackground(new Color(240, 248, 255));
 		onlineTable.setBounds(446, 36, 95, 220);
-		model.addColumn("Online List:");
-
-		model.addRow(new Object[]{"Online List:"});
-
+		onlineTable.setDefaultEditor(Object.class, null);
 		frame.getContentPane().add(onlineTable);
-
+		
+		model.addColumn("Online List:");
+		model.addRow(new Object[]{"Online List:"});
+		
+		
+		
 		// Add Listeners
 		messageField.addActionListener(new ActionListener() {
 			/**
