@@ -44,7 +44,8 @@ public class Client {
 		frame.getContentPane().setLayout(null);
 
 		messageField = new JTextField();
-		messageField.setText("Enter message..");
+		//messageField.setText("Enter message..");
+		TextPrompt tp = new TextPrompt("Enter message...", messageField);
 		messageField.setBounds(25, 270, 402, 54);
 		frame.getContentPane().add(messageField);
 		messageField.setColumns(10);

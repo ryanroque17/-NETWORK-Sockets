@@ -45,7 +45,8 @@ public class PrivateMessageWindow {
 
 		messageField = new JTextField();
 		messageField.setBounds(25, 270, 402, 54);
-		messageField.setText("Enter message..");
+		//messageField.setText("Enter message..");
+		TextPrompt tp = new TextPrompt("Enter message...", messageField);
 		frmPrivateChatWith.getContentPane().add(messageField);
 		messageField.setColumns(10);
 		// Add Listeners
