@@ -80,8 +80,13 @@ public class Client {
 		chatButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				int row = onlineTable.getSelectedRow();
-
-				out.println("INITIATEPM " + name + "," + row);
+				
+				if(row==-1) {
+					JOptionPane.showMessageDialog(frame,
+						    "Choose a recepient first");
+				}else {
+					out.println("INITIATEPM " + name + "," + row);
+				}
 			}
 		});
 		frame.getContentPane().add(chatButton);
@@ -151,8 +156,13 @@ public class Client {
 				}
 			} else if (line.startsWith("INITIATEPM")) {
 				String receipientName = line.substring(11);
-				privateMessages.add(new PrivateMessage(name, receipientName, in, out));
-
+				if(name.equals(receipientName)) {
+					JOptionPane.showMessageDialog(frame,
+						    "You can't choose yourself. Choose another person");
+				}
+				else {
+					privateMessages.add(new PrivateMessage(name, receipientName, in, out));
+				}
 			} else if (line.startsWith("PRIVATEMESSAGE")) {
 				String senderName = line.substring(15).split("\\,")[0];
 				String recepientName = line.substring(15).split("\\,")[1];

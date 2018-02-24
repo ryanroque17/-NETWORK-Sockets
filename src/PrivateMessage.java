@@ -40,7 +40,7 @@ public class PrivateMessage{
 		frmPrivateChatWith = new JFrame();
 		frmPrivateChatWith.setTitle("Private Chat with");
 		frmPrivateChatWith.setBounds(100, 100, 578, 374);
-		frmPrivateChatWith.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frmPrivateChatWith.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		frmPrivateChatWith.getContentPane().setLayout(null);
 
 		messageField = new JTextField();
