@@ -1,7 +1,7 @@
 /Client$1.class
 /Client$2.class
-/Client$3.class
 /Client.class
+/Client$3.class
 /PrivateMessage$1.class
 /PrivateMessage$2.class
 /PrivateMessage.class
@@ -10,5 +10,12 @@
 /PrivateMessageWindow.class
 /Server.class
 /SocketHandler.class
-/TextPrompt.class
 /TextPrompt$Show.class
+/TextPrompt.class
+/GroupChat$1.class
+/GroupChat$2.class
+/GroupChat.class
+/GroupChatWindow$1.class
+/GroupChatWindow$2.class
+/GroupChatWindow.class
+/GroupChatWindow$3.class

@@ -17,7 +17,6 @@ public class Server {
 		try {
 			while (true) {
 				new SocketHandler(listener.accept()).start();
-				
 			}
 		} finally {
 			listener.close();

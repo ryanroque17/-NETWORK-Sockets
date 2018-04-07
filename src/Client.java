@@ -9,6 +9,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -27,13 +28,13 @@ public class Client {
 	private JTextField messageField;
 	private JTable onlineTable;
 	private JButton sendButton, chatButton;
-	private JTextArea groupChat;
+	private JTextArea allChat;
 	private JLabel nameLabel;
 	private DefaultTableModel model;
 	String name;
-
+	String[] onlineList;
 	ArrayList<PrivateMessage> privateMessages = new ArrayList<>();
-
+	ArrayList<GroupChatWindow> groupChats = new ArrayList<>();
 	public Client() {
 
 		// Layout GUI
@@ -62,11 +63,11 @@ public class Client {
 		});
 		frame.getContentPane().add(sendButton);
 
-		groupChat = new JTextArea();
-		groupChat.setBackground(new Color(240, 248, 255));
-		groupChat.setBounds(25, 36, 402, 223);
-		groupChat.setEditable(false);
-		frame.getContentPane().add(groupChat);
+		allChat = new JTextArea();
+		allChat.setBackground(new Color(240, 248, 255));
+		allChat.setBounds(25, 36, 402, 223);
+		allChat.setEditable(false);
+		frame.getContentPane().add(allChat);
 
 		nameLabel = new JLabel("Hi, <name>!");
 		nameLabel.setForeground(new Color(255, 255, 255));
@@ -80,13 +81,30 @@ public class Client {
 		chatButton.setBounds(446, 233, 95, 28);
 		chatButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				int row = onlineTable.getSelectedRow();
-				
-				if(row==-1) {
+				int[] row = onlineTable.getSelectedRows();
+				int numSelectedRows = onlineTable.getSelectedRows().length;
+				if(numSelectedRows==0) {
 					JOptionPane.showMessageDialog(frame,
-						    "Choose a recepient first");
+						    "Choose a recepient first");	
+				}else if(numSelectedRows ==1) {
+					out.println("INITIATEPM " + name + "," + row[0]);
 				}else {
-					out.println("INITIATEPM " + name + "," + row);
+					int userIndex = -1;
+					for(int i=0; i<model.getRowCount(); i++) {
+						if(model.getValueAt(i, 0).equals(name)) {
+							userIndex = i;
+						}
+					}
+					
+					String groupChatUsers = Arrays.toString(row);
+					groupChatUsers = groupChatUsers.substring(1, groupChatUsers.length()-1);
+					System.out.println("groupChatUsersb " +groupChatUsers);
+
+					groupChatUsers = groupChatUsers + ", " + userIndex;
+					System.out.println("groupChatUsers " +groupChatUsers);
+					//System.out.println("ey" + groupChatUsers.substring(1, groupChatUsers.length()-1));
+					System.out.println("INITIATEGC " + groupChatUsers);
+					out.println("INITIATEGC " + groupChatUsers);
 				}
 			}
 		});
@@ -143,17 +161,19 @@ public class Client {
 			} else if (line.startsWith("NAMEACCEPTED")) {
 				nameLabel.setText("Hi, " + name + "!	");
 			} else if (line.startsWith("MESSAGE")) {
-				groupChat.append(line.substring(8) + "\n");
+				allChat.append(line.substring(8) + "\n");
 			} else if (line.startsWith("ONLINELIST")) {
 				String online = line.substring(11);
-				String[] onlineList = online.substring(1, online.length()-1).split("\\,");
+				onlineList = online.substring(1, online.length()-1).split("\\, ");
 
 				model.setRowCount(0);
 				model.addRow(new Object[]{"Online List:"});
 
 				for(int i=0; i<onlineList.length; i++) {
 					model.addRow(new Object[]{onlineList[i]});
-
+				}
+				for(int i=0; i<groupChats.size();i++) {
+					groupChats.get(i).setOnlineList(onlineList);
 				}
 			} else if (line.startsWith("INITIATEPM")) {
 				String receipientName = line.substring(11);
@@ -192,6 +212,74 @@ public class Client {
 					}
 				}
 
+			} else if (line.startsWith("INITIATEGC")) {
+				String groupChatId = line.substring(11).split("\\, ")[0];
+				//array of the users in the gc
+				String[] groupChatUsers = Arrays.copyOfRange(line.substring(11).split("\\, "), 1, line.substring(11).split("\\, ").length);
+				
+				//new groupchatwindow
+				GroupChatWindow newGroupChatWindow = new GroupChatWindow(groupChatId, name, in, out, onlineList);
+				groupChats.add(newGroupChatWindow);
+				
+				//set the users table list
+				DefaultTableModel model = newGroupChatWindow.getModel();
+				model.setRowCount(0);
+				model.addRow(new Object[]{"Users:"});
+
+				for(int i=0; i<groupChatUsers.length; i++) {
+					model.addRow(new Object[]{groupChatUsers[i]});
+				}
+				newGroupChatWindow.setModel(model);
+				
+			} else if (line.startsWith("GROUPCHATMESSAGE")) {
+				String groupChatId = line.substring(17).split("\\,")[0];
+				String message = line.substring(17).split("\\,")[1];
+				
+				GroupChatWindow groupChat = null;
+				//gets the specific groupchatwindow
+				for(int i=0; i<groupChats.size();i++) {
+					if(groupChatId.equals(groupChats.get(i).getGroupChatId())) {
+						groupChat = groupChats.get(i);
+					}
+				}
+				//sets the message to the text area
+				groupChat.getMessageArea().append(message + "\n");
+			} else if (line.startsWith("GROUPCHATINVITE")) {
+				String groupChatId = line.substring(16).split("\\,")[0];
+				String invitedUser = line.substring(16).split("\\,")[1];
+				
+				//array of the users in the groupchat
+				String[] groupChatUsers = Arrays.copyOfRange(line.substring(16).split("\\, "), 2, line.substring(11).split("\\, ").length);
+				
+				invitedUser = invitedUser.substring(1);
+				
+				//if this client is the invited user, new window
+				if(invitedUser.equals(name)) {
+					GroupChatWindow newGroupChatWindow = new GroupChatWindow(groupChatId, name, in, out, onlineList);
+					groupChats.add(newGroupChatWindow);
+				}
+
+				GroupChatWindow groupChat = null;
+				
+				//get the specific groupchat
+				for(int i=0; i<groupChats.size();i++) {
+					System.out.println(groupChatId + " = " + groupChats.get(i).getGroupChatId());
+					if(groupChatId.equals(groupChats.get(i).getGroupChatId())) {
+						groupChat = groupChats.get(i);
+					}
+				}
+				
+				//update the user list of the gc
+
+				DefaultTableModel model = groupChat.getModel();
+				model.setRowCount(0);
+				model.addRow(new Object[]{"Users:"});
+
+				for(int i=0; i<groupChatUsers.length; i++) {
+					model.addRow(new Object[]{groupChatUsers[i]});
+
+				}
+				groupChat.setModel(model);
 			}
 		}
 	}
