@@ -4,14 +4,22 @@ import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -27,14 +35,26 @@ public class Client {
 	private JFrame frame;
 	private JTextField messageField;
 	private JTable onlineTable;
-	private JButton sendButton, chatButton;
+	private JButton sendButton, chatButton, attachButton;
 	private JTextArea allChat;
-	private JLabel nameLabel;
+	private JLabel nameLabel, attachLabel;
 	private DefaultTableModel model;
-	String name;
-	String[] onlineList;
-	ArrayList<PrivateMessage> privateMessages = new ArrayList<>();
-	ArrayList<GroupChatWindow> groupChats = new ArrayList<>();
+	private JFileChooser fileChooser;
+
+	private String filePath;
+	private String fileName;
+	private long fileSize;
+	private boolean isAttached = false;
+
+	private String name;
+	private String[] onlineList;
+	private ArrayList<PrivateMessage> privateMessages = new ArrayList<>();
+	private ArrayList<GroupChatWindow> groupChats = new ArrayList<>();
+
+	private Socket socket;
+	PrivateMessage currentPM = null;
+	GroupChatWindow currentGC = null;
+
 	public Client() {
 
 		// Layout GUI
@@ -43,6 +63,40 @@ public class Client {
 		frame.setBounds(100, 100, 578, 374);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.getContentPane().setLayout(null);
+
+		attachButton = new JButton("Attach");
+		attachButton.setForeground(new Color(255, 255, 255));
+		attachButton.setBackground(new Color(25, 25, 112));
+		attachButton.setBounds(25, 233, 95, 28);
+		attachButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				fileChooser.setVisible(true);
+				fileChooser.showOpenDialog(frame);
+			}
+		});
+		frame.getContentPane().add(attachButton);
+		fileChooser = new JFileChooser();
+		fileChooser.setBounds(75, 63, 270, 146);
+		frame.getContentPane().add(fileChooser);
+		fileChooser.setVisible(false);
+		fileChooser.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if (e.getActionCommand().equals("ApproveSelection")) {
+					filePath = fileChooser.getSelectedFile().getAbsolutePath();
+					//System.out.println(filePath);
+					fileName = fileChooser.getSelectedFile().getName();
+					//System.out.println("fileName " + fileName);
+					fileSize =  fileChooser.getSelectedFile().length(); 
+					attachLabel.setText(fileName);
+					isAttached = true;
+				} else {
+					filePath = "";
+					fileName = "";
+					attachLabel.setText(fileName);
+					isAttached = false;
+				}
+			}
+		});
 
 		messageField = new JTextField();
 		//messageField.setText("Enter message..");
@@ -57,15 +111,71 @@ public class Client {
 		sendButton.setBounds(446, 269, 95, 56);
 		sendButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				out.println(messageField.getText());
+				String message = messageField.getText();
+
+				if (isAttached) {
+					out.println("GLOBALATTACHMENT " + name + ", " + filePath +", " +fileName + ", " + fileSize);
+					try {
+						sendFile(filePath, socket);
+					} catch (IOException e2) {
+						// TODO Auto-generated catch block
+						e2.printStackTrace();
+					}
+
+					allChat.append(name + ": (Attachment: " +fileName+")" + "\n");
+					//message = message + "(Attachment: " + fileName + ")";
+					out.println("");
+				}else {
+
+					out.println("GLOBALMESSAGE " + message);
+				}
+
+				out.flush();
+				filePath = "";
+				fileName = "";
+				fileSize = 0;
+				attachLabel.setText("");
+				isAttached = false;
 				messageField.setText("");
 			}
 		});
 		frame.getContentPane().add(sendButton);
 
+		// Add Listeners (Enter key)
+		messageField.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String message = messageField.getText();
+
+				if (isAttached) {
+					out.println("GLOBALATTACHMENT " + name + ", " + filePath +", " +fileName + ", " + fileSize);
+					try {
+						sendFile(filePath, socket);
+					} catch (IOException e2) {
+						// TODO Auto-generated catch block
+						e2.printStackTrace();
+					}
+
+					allChat.append(name + ": (Attachment: " +fileName+")" + "\n");
+					//message = message + "(Attachment: " + fileName + ")";
+					out.println("");
+				}else {
+
+					out.println("GLOBALMESSAGE " + message);
+				}
+
+				out.flush();
+				filePath = "";
+				fileName = "";
+				fileSize = 0;
+				attachLabel.setText("");
+				isAttached = false;
+				messageField.setText("");
+			}
+		});
+
 		allChat = new JTextArea();
 		allChat.setBackground(new Color(240, 248, 255));
-		allChat.setBounds(25, 36, 402, 223);
+		allChat.setBounds(25, 36, 402, 193);
 		allChat.setEditable(false);
 		frame.getContentPane().add(allChat);
 
@@ -85,7 +195,7 @@ public class Client {
 				int numSelectedRows = onlineTable.getSelectedRows().length;
 				if(numSelectedRows==0) {
 					JOptionPane.showMessageDialog(frame,
-						    "Choose a recepient first");	
+							"Choose a recepient first");	
 				}else if(numSelectedRows ==1) {
 					out.println("INITIATEPM " + name + "," + row[0]);
 				}else {
@@ -95,7 +205,7 @@ public class Client {
 							userIndex = i;
 						}
 					}
-					
+
 					String groupChatUsers = Arrays.toString(row);
 					groupChatUsers = groupChatUsers.substring(1, groupChatUsers.length()-1);
 					System.out.println("groupChatUsersb " +groupChatUsers);
@@ -110,6 +220,10 @@ public class Client {
 		});
 		frame.getContentPane().add(chatButton);
 
+
+		attachLabel = new JLabel();
+		attachLabel.setBounds(130, 233, 150, 28);
+		frame.getContentPane().add(attachLabel);
 		model = new DefaultTableModel(); 
 		onlineTable = new JTable(model);
 		onlineTable.setBackground(new Color(240, 248, 255));
@@ -122,13 +236,7 @@ public class Client {
 
 
 
-		// Add Listeners
-		messageField.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				out.println(messageField.getText());
-				messageField.setText("");
-			}
-		});
+
 	}
 
 	private String getName() {
@@ -145,7 +253,7 @@ public class Client {
 	private void run() throws IOException {
 
 		// Make connection and initialize streams
-		Socket socket = new Socket("localhost", 9001);
+		socket = new Socket("localhost", 9001);
 		name = "";
 
 		in = new BufferedReader(new InputStreamReader(
@@ -179,21 +287,21 @@ public class Client {
 				String receipientName = line.substring(11);
 				if(name.equals(receipientName)) {
 					JOptionPane.showMessageDialog(frame,
-						    "You can't choose yourself. Choose another person");
+							"You can't choose yourself. Choose another person");
 				}
 				else {
-					privateMessages.add(new PrivateMessage(name, receipientName, in, out));
+					privateMessages.add(new PrivateMessage(socket, name, receipientName, in, out));
 				}
 			} else if (line.startsWith("PRIVATEMESSAGE")) {
 				String senderName = line.substring(15).split("\\,")[0];
 				String recepientName = line.substring(15).split("\\,")[1];
 				String message = line.substring(15).split("\\,")[2];
 				boolean checker = false;
-				
+
 				if(name.equals(senderName) || name.equals(recepientName)) {
 					//Create a new PM Window
 					if(privateMessages.size()==0) {
-						privateMessages.add(new PrivateMessage(recepientName, senderName, in, out));
+						privateMessages.add(new PrivateMessage(socket, recepientName, senderName, in, out));
 						privateMessages.get(0).getMessageArea().append(senderName +": " + message + "\n");
 						checker = true;
 					}else {
@@ -204,10 +312,10 @@ public class Client {
 							}
 						}
 					}
-					
+
 					//Create a new PM Window
 					if(!checker) {
-						privateMessages.add(new PrivateMessage(recepientName, senderName, in, out));
+						privateMessages.add(new PrivateMessage(socket, recepientName, senderName, in, out));
 						privateMessages.get(privateMessages.size()-1).getMessageArea().append(senderName +": " + message + "\n");
 					}
 				}
@@ -216,11 +324,11 @@ public class Client {
 				String groupChatId = line.substring(11).split("\\, ")[0];
 				//array of the users in the gc
 				String[] groupChatUsers = Arrays.copyOfRange(line.substring(11).split("\\, "), 1, line.substring(11).split("\\, ").length);
-				
+
 				//new groupchatwindow
-				GroupChatWindow newGroupChatWindow = new GroupChatWindow(groupChatId, name, in, out, onlineList);
+				GroupChatWindow newGroupChatWindow = new GroupChatWindow(socket, groupChatId, name, in, out, onlineList);
 				groupChats.add(newGroupChatWindow);
-				
+
 				//set the users table list
 				DefaultTableModel model = newGroupChatWindow.getModel();
 				model.setRowCount(0);
@@ -230,11 +338,11 @@ public class Client {
 					model.addRow(new Object[]{groupChatUsers[i]});
 				}
 				newGroupChatWindow.setModel(model);
-				
+
 			} else if (line.startsWith("GROUPCHATMESSAGE")) {
 				String groupChatId = line.substring(17).split("\\,")[0];
 				String message = line.substring(17).split("\\,")[1];
-				
+
 				GroupChatWindow groupChat = null;
 				//gets the specific groupchatwindow
 				for(int i=0; i<groupChats.size();i++) {
@@ -247,20 +355,20 @@ public class Client {
 			} else if (line.startsWith("GROUPCHATINVITE")) {
 				String groupChatId = line.substring(16).split("\\,")[0];
 				String invitedUser = line.substring(16).split("\\,")[1];
-				
+
 				//array of the users in the groupchat
 				String[] groupChatUsers = Arrays.copyOfRange(line.substring(16).split("\\, "), 2, line.substring(11).split("\\, ").length);
-				
+
 				invitedUser = invitedUser.substring(1);
-				
+
 				//if this client is the invited user, new window
 				if(invitedUser.equals(name)) {
-					GroupChatWindow newGroupChatWindow = new GroupChatWindow(groupChatId, name, in, out, onlineList);
+					GroupChatWindow newGroupChatWindow = new GroupChatWindow(socket, groupChatId, name, in, out, onlineList);
 					groupChats.add(newGroupChatWindow);
 				}
 
 				GroupChatWindow groupChat = null;
-				
+
 				//get the specific groupchat
 				for(int i=0; i<groupChats.size();i++) {
 					System.out.println(groupChatId + " = " + groupChats.get(i).getGroupChatId());
@@ -268,7 +376,7 @@ public class Client {
 						groupChat = groupChats.get(i);
 					}
 				}
-				
+
 				//update the user list of the gc
 
 				DefaultTableModel model = groupChat.getModel();
@@ -280,8 +388,158 @@ public class Client {
 
 				}
 				groupChat.setModel(model);
+			}else if (line.contains("GROUPATTACHMENT")) {
+				String groupChatId = line.substring(16).split("\\, ")[0];
+				String sender = line.substring(16).split("\\, ")[1];
+				String fileName = line.substring(16).split("\\, ")[2];
+				String fileSize = line.substring(16).split("\\, ")[3];
+
+				GroupChatWindow groupChat = null;
+
+				//get the specific groupchat
+				for(int i=0; i<groupChats.size();i++) {
+					System.out.println(groupChatId + " = " + groupChats.get(i).getGroupChatId());
+					if(groupChatId.equals(groupChats.get(i).getGroupChatId())) {
+						groupChat = groupChats.get(i);
+					}
+				}
+
+				if(!sender.equals(name)) {
+					int answer = JOptionPane.showConfirmDialog(
+							groupChat.getFrmGroupChat(),
+							"Accept attachment " + fileName + " from " + sender + "?",
+							"Attachment",
+							JOptionPane.YES_NO_OPTION);
+					currentGC = groupChat;
+					if(answer == 0)
+						saveFile(socket, fileName, Integer.parseInt(fileSize));		
+					
+					currentGC.getMessageArea().append(sender + ": (Attachment: " +fileName+")" + "\n");
+					currentGC = null;
+				}
+				allChat.append(sender + ": (Attachment: " +fileName+")" + "\n");
+
+			}else if (line.contains("GLOBALATTACHMENT")) {
+				String sender = line.substring(17).split("\\, ")[0];
+				String fileName = line.substring(17).split("\\, ")[1];
+				String fileSize = line.substring(17).split("\\, ")[2];
+
+				int answer = JOptionPane.showConfirmDialog(
+						frame,
+						"Accept attachment " + fileName + " from " + sender + "?",
+						"Attachment",
+						JOptionPane.YES_NO_OPTION);
+
+				if(answer == 0)
+					saveFile(socket, fileName, Integer.parseInt(fileSize));		
+
+				allChat.append(sender + ": (Attachment: " +fileName+")" + "\n");
+			}else if (line.contains("PRIVATEATTACHMENT")) {
+				String senderName = line.substring(18).split("\\,")[0];
+				String recepientName = line.substring(18).split("\\,")[1];
+
+				System.out.println("senderpa " + senderName);
+				System.out.println("recepientpa " + recepientName);
+
+				String fileName = line.substring(18).split("\\,")[2];
+				String fileSize = line.substring(18).split("\\,")[3];
+
+				boolean checker = false;
+				currentPM = null;
+				if(name.equals(senderName) || name.equals(recepientName)) {
+					//Create a new PM Window
+					if(privateMessages.size()==0) {
+						PrivateMessage newPM = new PrivateMessage(socket, recepientName, senderName, in, out);
+						privateMessages.add(newPM);
+						privateMessages.get(0).getMessageArea().append(senderName + ": (Attachment: " +fileName+")" + "\n");
+						currentPM = newPM;
+						checker = true;
+					}else {
+						for(int i=0; i<privateMessages.size(); i++) {
+							if((senderName.equals(privateMessages.get(i).getSenderName()) && recepientName.equals(privateMessages.get(i).getRecepientName())) || (senderName.equals(privateMessages.get(i).getRecepientName()) && recepientName.equals(privateMessages.get(i).getSenderName()))) {
+								privateMessages.get(i).getMessageArea().append(senderName + ": (Attachment: " +fileName+")" + "\n");
+								checker = true;
+								currentPM = privateMessages.get(i);
+							}
+						}
+					}
+
+					//Create a new PM Window
+					if(!checker) {
+						PrivateMessage newPM = new PrivateMessage(socket, recepientName, senderName, in, out);
+						privateMessages.add(newPM);
+						privateMessages.get(privateMessages.size()-1).getMessageArea().append(senderName + ": (Attachment: " +fileName+")" + "\n");
+						currentPM = newPM;
+
+					}
+				}
+				int answer = JOptionPane.showConfirmDialog(
+						currentPM.getFrmPrivateChatWith(),
+						"Accept attachment " + fileName + " from " + senderName + "?",
+						"Attachment",
+						JOptionPane.YES_NO_OPTION);
+
+				if(answer == 0)
+					saveFile(socket, fileName, Integer.parseInt(fileSize));		
+				currentPM=null;
 			}
 		}
+	}
+
+	public void sendFile(String file, Socket socket) throws IOException {
+		DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
+		FileInputStream fis = new FileInputStream(file);
+		byte[] buffer = new byte[4096];
+
+		while (fis.read(buffer) > 0) {
+			dos.write(buffer);
+		}
+		dos.flush();
+
+		//		fis.close();
+		//		dos.close();	
+	}
+
+	private void saveFile(Socket clientSock, String filename, int filesize) throws IOException {
+		DataInputStream dis = new DataInputStream(clientSock.getInputStream());
+
+		String filepath = "[Client] " + name;
+		File serverFolder = new File(filepath);
+		serverFolder.mkdirs();
+		filepath = filepath + "/" + filename;
+		System.out.println("filepath" + filepath);
+		FileOutputStream fos = new FileOutputStream(filepath);
+
+		byte[] buffer = new byte[4096];
+
+		int read = 0;
+		int totalRead = 0;
+		int remaining = filesize;
+
+		while(remaining > 0 && (read = dis.read(buffer, 0, Math.min(buffer.length, remaining))) !=-1) {
+			totalRead += read;
+			remaining -= read;
+			System.out.println("read " + totalRead + " bytes.");
+
+			fos.write(buffer, 0, read);
+
+		}
+		fos.flush();
+		//clientSock.getOutputStream().flush();
+
+		fos.close();
+		System.out.println("file saved from server " + System.currentTimeMillis() % 1000);
+		if(currentPM==null && currentGC==null)
+			JOptionPane.showMessageDialog(frame,
+					"File saved in [Client]" + name + " folder!");
+		else if(currentPM!=null)
+			JOptionPane.showMessageDialog(currentPM.getFrmPrivateChatWith(),
+					"File saved in [Client]" + name + " folder!");
+		else if(currentGC!=null)
+			JOptionPane.showMessageDialog(currentGC.getFrmGroupChat(),
+					"File saved in [Client]" + name + " folder!");
+		//				fos.close();
+		//				dis.close();
 	}
 
 	/**
