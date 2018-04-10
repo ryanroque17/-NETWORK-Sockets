@@ -278,12 +278,18 @@ public class Client {
 		createButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				String chatroomName;
+				String password;
 
 				chatroomName = JOptionPane.showInputDialog(
 						frame,
 						"Enter Chat Room Name",
 						"Create Chat Room",
 						JOptionPane.PLAIN_MESSAGE);
+				/*password = JOptionPane.showInputDialog(
+						frame,
+						"Enter Password",
+						"Create Chat Room",
+						JOptionPane.PLAIN_MESSAGE);*/
 				System.out.println("cn " + chatroomName);
 				out.println("CREATECHATROOM " + chatroomName);
 			}
@@ -299,6 +305,7 @@ public class Client {
 			public void actionPerformed(ActionEvent e) {
 				String password;
 				int row = chatroomTable.getSelectedRow();
+				int selected = chatroomTable.getSelectedRows().length;
 				Boolean passwordChecker = false;
 
 				/* check if Password is correct
@@ -309,9 +316,14 @@ public class Client {
 						JOptionPane.PLAIN_MESSAGE);
 				if
 				 */
-				String chatroomName = (String) model1.getValueAt(row, 0);
-				out.println("JOINCHATROOM " + name + ", " + chatroomName);
-
+				
+				if (selected == 0){
+					JOptionPane.showMessageDialog(frame,
+							"Choose a Chat Room to join first");
+				}else {
+					String chatroomName = (String) model1.getValueAt(row, 0);
+					out.println("JOINCHATROOM " + name + ", " + chatroomName);
+				}
 			}
 		});
 
@@ -634,11 +646,17 @@ public class Client {
 				currentGame.enemyQuitted();
 			}else if (line.contains("CREATECHATROOM")) {
 				String chatroomId = line.substring(15).split("\\,")[0];
-
-				chatrooms.add(chatroomId);
-				System.out.println("Chatroom " + chatroomId);
-				model1.addRow(new Object[]{chatroomId});
-				chatroomTable.setModel(model1);
+				
+				if (chatroomId == null){
+					JOptionPane.showMessageDialog(frame, 
+							"Please enter a Chat Room name.");
+				}
+				else {
+					chatrooms.add(chatroomId);
+					System.out.println("Chatroom " + chatroomId);
+					model1.addRow(new Object[]{chatroomId});
+					chatroomTable.setModel(model1);
+				}
 			}else if (line.contains("JOINCHATROOM")) {
 				String chatroomId = line.substring(13).split("\\, ")[0];
 				String[] chatroomUsers = Arrays.copyOfRange(line.substring(13).split("\\, "), 2, line.substring(11).split("\\, ").length);
@@ -729,66 +747,7 @@ public class Client {
 				for(int i=0; i<chatroomList.length; i++) {
 					model1.addRow(new Object[]{chatroomList[i]});
 				}
-
-			}/*else if (line.contains("CREATECHATROOM")){
-				String chatroomId = line.substring(15).split("\\,")[0];
-
-				ChatroomWindow newChatroomWindow = new ChatroomWindow(socket, chatroomId, name, in, out, onlineList);
-				chatrooms.add(newChatroomWindow);
-
-				//set the users table list
-				DefaultTableModel model = newChatroomWindow.getModel();
-				model.setRowCount(0);
-
-				model.addRow(new Object[]{"Users:"});
-				model.addRow(new Object[]{name});
-
-				newChatroomWindow.setModel(model);
-			}else if (line.contains("CHATROOMMESSAGE")){
-				String chatroomId = line.substring(16).split("\\,")[0];
-				String message = line.substring(16).split("\\,")[1];
-
-				ChatroomWindow chatRoom = null;
-				//gets the specific chatroomWindow
-				for(int i=0; i<chatrooms.size();i++) {
-					if(chatroomId.equals(chatrooms.get(i).getChatroomId())) {
-						chatRoom = chatrooms.get(i);
-					}
-				}
-				//sets the message to the text area
-				chatRoom.getMessageArea().append(message + "\n");
-			}else if (line.contains("CHATROOMATTACHMENT")) {
-				String chatroomId = line.substring(19).split("\\, ")[0];
-				String sender = line.substring(19).split("\\, ")[1];
-				String fileName = line.substring(19).split("\\, ")[2];
-				String fileSize = line.substring(19).split("\\, ")[3];
-
-				ChatroomWindow chatRoom = null;
-
-				//get the specific chatroom
-				for(int i=0; i<chatrooms.size();i++) {
-					if(chatroomId.equals(chatrooms.get(i).getChatroomId())) {
-						chatRoom = chatrooms.get(i);
-					}
-				}
-
-				if(!sender.equals(name)) {
-					int answer = JOptionPane.showConfirmDialog(
-							chatRoom.getFrmChatroom(),
-							"Accept attachment " + fileName + " from " + sender + "?",
-							"Attachment",
-							JOptionPane.YES_NO_OPTION);
-					currentCR = chatRoom;
-					if(answer == 0)
-						saveFile(socket, fileName, Integer.parseInt(fileSize));		
-
-					currentCR.getMessageArea().append(sender + ": (Attachment: " +fileName+")" + "\n");
-					currentCR = null;
-				}
-				allChat.append(sender + ": (Attachment: " +fileName+")" + "\n");
-			}else if (line.contains("JOINCHATROOM")){
-				//check if password is correct
-			}*/
+			}
 		}
 	}
 
