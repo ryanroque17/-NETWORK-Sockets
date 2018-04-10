@@ -55,7 +55,7 @@ public class ChatroomWindow {
 		this.in = in;
 		this.out = out;
 		this.onlineList = onlineList;
-		frmChatroom.setTitle("Chat Room: " + id);
+		frmChatroom.setTitle("Chat Room: " + id + " - " + name);
 		frmChatroom.setVisible(true);
 	}
 
@@ -100,7 +100,7 @@ public class ChatroomWindow {
 					out.println("");
 				}else {
 					
-					out.println("CHATROOMMESSAGE " + chatroomId + "," + name + ": " + messageField.getText());
+					out.println("CHATROOMMESSAGE " + chatroomId + ", " + name + ": " + messageField.getText());
 				}
 				
 				out.flush();
@@ -131,8 +131,11 @@ public class ChatroomWindow {
 					messageArea.append(name + ": (Attachment: " +fileName+")" + "\n");
 					out.println("");
 				}else {
-					
-					out.println("CHATROOMMESSAGE " + chatroomId + "," + name + ": " + messageField.getText());
+					System.out.println("ey " + chatroomId);
+					String message = "CHATROOMMESSAGE " + chatroomId + ", " + name + ": " + messageField.getText();
+					System.out.println("ey 2 " + message);
+
+					out.println(message);
 				}
 				
 				out.flush();

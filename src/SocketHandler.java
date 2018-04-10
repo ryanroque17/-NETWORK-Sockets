@@ -24,7 +24,9 @@ public class SocketHandler extends Thread {
 	private static ArrayList<BufferedReader> readers = new ArrayList<BufferedReader>();
 	private static ArrayList<Socket> sockets = new ArrayList<Socket>();
 	private static ArrayList<GroupChat> groupChats = new ArrayList<GroupChat>();
+	private static ArrayList<Chatroom> chatrooms = new ArrayList<Chatroom>();
 	private static ArrayList<Game> games = new ArrayList<Game>();
+	private static ArrayList<String> chatroomNames = new ArrayList<String>();
 
 	public SocketHandler(Socket socket) {
 		this.socket = socket;
@@ -51,6 +53,13 @@ public class SocketHandler extends Thread {
 						sockets.add(socket);
 						for (PrintWriter writer : writers) {
 							writer.println("ONLINELIST " + names.toString());
+							writer.println("");
+						}
+						if(!chatroomNames.isEmpty()) {
+							for (PrintWriter writer : writers) {
+								writer.println("CHATROOMLIST " + chatroomNames.toString());
+								writer.println("");
+							}
 						}
 						break;
 					}
@@ -268,6 +277,73 @@ public class SocketHandler extends Thread {
 					String player = input.substring(9).split("\\, ")[1];
 					
 					writers.get(names.indexOf(player)).println("QUITGAME " + gameId);
+				}else if(input.contains("CREATECHATROOM")) {
+					String chatroomName = input.substring(15).split("\\, ")[0];
+					
+					Chatroom newChatroom = new Chatroom(chatroomName);
+					chatrooms.add(newChatroom);
+					chatroomNames.add(chatroomName);
+					for (PrintWriter writer : writers) {
+						writer.println("");
+
+						writer.println("CREATECHATROOM " + chatroomName);
+					}
+				}else if(input.contains("JOINCHATROOM")) {
+					String name = input.substring(13).split("\\, ")[0];
+					String chatroomName = input.substring(13).split("\\, ")[1];
+					
+					//gets the specific chatroom
+					Chatroom currChatroom = null;
+					for(int i=0; i<chatrooms.size();i++) {
+						if(chatroomName.equals(chatrooms.get(i).getChatroomId())) {
+							currChatroom = chatrooms.get(i);
+						}
+					}
+					currChatroom.addUser(name);
+					String currUsers = currChatroom.getUsers().toString();
+					currUsers = currUsers.substring(1, currUsers.length()-1);
+					
+					for(int i=0; i<currChatroom.getUsers().size();i++)
+						writers.get(names.indexOf(currChatroom.getUsers().get(i))).println("JOINCHATROOM " + chatroomName  + ", " + name + ", " + currUsers);
+					
+				}else if(input.contains("CHATROOMMESSAGE")) {
+					String chatroomName = input.substring(16).split("\\, ")[0];
+					String message = input.substring(16).split("\\, ")[1];
+
+					Chatroom currChatroom = null;
+					for(int i=0; i<chatrooms.size();i++) {
+						if(chatroomName.equals(chatrooms.get(i).getChatroomId())) {
+							currChatroom = chatrooms.get(i);
+						}
+					}
+					for(int i=0; i<currChatroom.getUsers().size();i++)
+						writers.get(names.indexOf(currChatroom.getUsers().get(i))).println("CHATROOMMESSAGE " + chatroomName + ", " +  message);
+					
+				}else if (input.contains("CHATROOMATTACHMENT")) {
+					String chatroomId = input.substring(19).split("\\, ")[0];
+					String sender = input.substring(19).split("\\, ")[1];
+					String filePath = input.substring(19).split("\\, ")[2];
+					String fileName = input.substring(19).split("\\, ")[3];
+					String fileSize = input.substring(19).split("\\, ")[4];
+
+					saveFile(socket, fileName, Integer.parseInt(fileSize));
+
+					Chatroom chatroom = null;
+
+					//get the specific groupchat
+					for(int i=0; i<chatrooms.size();i++) {
+						if(chatroomId.equals(chatrooms.get(i).getChatroomId())) {
+							chatroom = chatrooms.get(i);
+						}
+					}
+
+					//get the clients of the groupchat
+					ArrayList<String> groupChatUsers = chatroom.getUsers();
+					for(int i=0; i<chatroom.getUsers().size();i++) {
+						writers.get(names.indexOf(chatroom.getUsers().get(i))).println("CHATROOMATTACHMENT " + chatroomId + ", "+ sender + ", " + fileName + ", " + fileSize);
+						sendFile("server/"+fileName, sockets.get(names.indexOf(chatroom.getUsers().get(i))));
+					}
+
 				}
 
 

@@ -48,11 +48,12 @@ public class Client {
 	private boolean isAttached = false;
 
 	private String name;
-	private String[] onlineList;
+	private String[] onlineList, chatroomList;
 	private ArrayList<PrivateMessage> privateMessages = new ArrayList<>();
 	private ArrayList<GroupChatWindow> groupChats = new ArrayList<>();
 	private ArrayList<GameWindow> games = new ArrayList<>();
-	private ArrayList<ChatroomWindow> chatrooms = new ArrayList<>();
+	private ArrayList<String> chatrooms = new ArrayList<>();
+	private ArrayList<ChatroomWindow> chatroomWindows = new ArrayList<>();
 
 	private Socket socket;
 	PrivateMessage currentPM = null;
@@ -94,7 +95,7 @@ public class Client {
 					}else
 						break;
 				}
-				
+
 				out.println("INVITEGAME " + name + ", " + choice);
 
 			}
@@ -267,7 +268,7 @@ public class Client {
 		onlineTable.setBounds(446, 36, 95, 220);
 		onlineTable.setDefaultEditor(Object.class, null);
 		frame.getContentPane().add(onlineTable);
-		
+
 		//create chatroom
 		JButton createButton = new JButton("Create");
 		createButton.setForeground(Color.WHITE);
@@ -277,16 +278,17 @@ public class Client {
 		createButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				String chatroomName;
-				
+
 				chatroomName = JOptionPane.showInputDialog(
 						frame,
 						"Enter Chat Room Name",
 						"Create Chat Room",
 						JOptionPane.PLAIN_MESSAGE);
+				System.out.println("cn " + chatroomName);
 				out.println("CREATECHATROOM " + chatroomName);
 			}
 		});
-		
+
 		//join chatroom
 		joinButton = new JButton("Join");
 		joinButton.setForeground(Color.WHITE);
@@ -298,7 +300,7 @@ public class Client {
 				String password;
 				int row = chatroomTable.getSelectedRow();
 				Boolean passwordChecker = false;
-				
+
 				/* check if Password is correct
 				password = JOptionPane.showInputDialog(
 						frame,
@@ -306,19 +308,20 @@ public class Client {
 						"Join Chatroom",
 						JOptionPane.PLAIN_MESSAGE);
 				if
-				*/
-				out.println("JOINCHATROOM " + name + "," + row);
-				
+				 */
+				String chatroomName = (String) model1.getValueAt(row, 0);
+				out.println("JOINCHATROOM " + name + ", " + chatroomName);
+
 			}
 		});
-		
+
 		model1 = new DefaultTableModel();
 		chatroomTable = new JTable(model1);
 		chatroomTable.setBackground(new Color(240, 248, 255));
 		chatroomTable.setBounds(553, 36, 95, 220);
 		chatroomTable.setDefaultEditor(Object.class, null);
 		frame.getContentPane().add(chatroomTable);
-		
+
 		model1.addColumn("Chatrooms:");
 		model1.addRow(new Object[]{"Chatrooms:"});
 
@@ -508,7 +511,6 @@ public class Client {
 					currentGC.getMessageArea().append(sender + ": (Attachment: " +fileName+")" + "\n");
 					currentGC = null;
 				}
-				allChat.append(sender + ": (Attachment: " +fileName+")" + "\n");
 
 			}else if (line.contains("GLOBALATTACHMENT")) {
 				String sender = line.substring(17).split("\\, ")[0];
@@ -577,29 +579,29 @@ public class Client {
 				String gameId = line.substring(11).split("\\, ")[0];
 				String senderName = line.substring(11).split("\\, ")[1];
 				String invitedPlayer = line.substring(11).split("\\, ")[2];
-				
+
 				GameWindow newGameWindow = null;
 				if(!name.equals(senderName)) {
-					 newGameWindow = new GameWindow(gameId, invitedPlayer, senderName, "O", in, out);
+					newGameWindow = new GameWindow(gameId, invitedPlayer, senderName, "O", in, out);
 				}else {
-					 newGameWindow = new GameWindow(gameId, senderName, invitedPlayer, "X", in, out);
-					 newGameWindow.setTurn(true);
+					newGameWindow = new GameWindow(gameId, senderName, invitedPlayer, "X", in, out);
+					newGameWindow.setTurn(true);
 				}
-				
+
 				games.add(newGameWindow);
 
 			}else if (line.contains("PLAYERMOVE")) {
 				String gameId = line.substring(11).split("\\, ")[0];
 				String buttonIndex = line.substring(11).split("\\, ")[1];
-				
+
 				GameWindow currentGame = null;
 				for(int i=0; i<games.size();i++) {
-				//	System.out.println(gameId + " = " + games.get(i).getGameId());
+					//	System.out.println(gameId + " = " + games.get(i).getGameId());
 					if(gameId.equals(games.get(i).getGameId())) {
 						currentGame = games.get(i);
 					}
 				}
-				
+
 				if(currentGame.getCharacter().equals("X"))
 					currentGame.getButtons().get(Integer.parseInt(buttonIndex)).setText("O");
 				else
@@ -609,10 +611,10 @@ public class Client {
 
 			}else if (line.contains("GAMERESULT")) {
 				String gameId = line.substring(11).split("\\, ")[0];
-				
+
 				GameWindow currentGame = null;
 				for(int i=0; i<games.size();i++) {
-				//	System.out.println(gameId + " = " + games.get(i).getGameId());
+					//	System.out.println(gameId + " = " + games.get(i).getGameId());
 					if(gameId.equals(games.get(i).getGameId())) {
 						currentGame = games.get(i);
 					}
@@ -620,29 +622,127 @@ public class Client {
 				currentGame.showDefeat();
 			}else if (line.contains("QUITGAME")) {
 				String gameId = line.substring(9).split("\\, ")[0];
-				
+
 				GameWindow currentGame = null;
 				for(int i=0; i<games.size();i++) {
-				//	System.out.println(gameId + " = " + games.get(i).getGameId());
+					//	System.out.println(gameId + " = " + games.get(i).getGameId());
 					if(gameId.equals(games.get(i).getGameId())) {
 						currentGame = games.get(i);
 					}
 				}
-				
+
 				currentGame.enemyQuitted();
+			}else if (line.contains("CREATECHATROOM")) {
+				String chatroomId = line.substring(15).split("\\,")[0];
+
+				chatrooms.add(chatroomId);
+				System.out.println("Chatroom " + chatroomId);
+				model1.addRow(new Object[]{chatroomId});
+				chatroomTable.setModel(model1);
+			}else if (line.contains("JOINCHATROOM")) {
+				String chatroomId = line.substring(13).split("\\, ")[0];
+				String[] chatroomUsers = Arrays.copyOfRange(line.substring(13).split("\\, "), 2, line.substring(11).split("\\, ").length);
+				String sender = line.substring(13).split("\\, ")[1];
+
+				if(name.equals(sender)) {
+					ChatroomWindow newChatroomWindow = new ChatroomWindow(socket, chatroomId, name, in, out, onlineList);
+					chatroomWindows.add(newChatroomWindow);
+
+					//set the users table list
+					DefaultTableModel model = newChatroomWindow.getModel();
+					model.setRowCount(0);
+					model.addRow(new Object[]{"Users:"});
+
+					for(int i=0; i<chatroomUsers.length; i++) {
+						model.addRow(new Object[]{chatroomUsers[i]});
+					}
+					newChatroomWindow.setModel(model);
+				}else {
+					ChatroomWindow chatRoom = null;
+					//gets the specific chatroomWindow
+					for(int i=0; i<chatroomWindows.size();i++) {
+						if(chatroomId.equals(chatroomWindows.get(i).getChatroomId())) {
+							chatRoom = chatroomWindows.get(i);
+						}
+					}
+					
+					DefaultTableModel model = chatRoom.getModel();
+					model.setRowCount(0);
+					model.addRow(new Object[]{"Users:"});
+
+					for(int i=0; i<chatroomUsers.length; i++) {
+						model.addRow(new Object[]{chatroomUsers[i]});
+					}
+					chatRoom.setModel(model);
+				}
+			}else if (line.contains("CHATROOMMESSAGE")){
+				System.out.println(line);
+				String chatroomId = line.substring(16).split("\\, ")[0];
+				String message = line.substring(16).split("\\, ")[1];
+
+				ChatroomWindow chatRoom = null;
+				//gets the specific chatroomWindow
+				for(int i=0; i<chatroomWindows.size();i++) {
+					if(chatroomId.equals(chatroomWindows.get(i).getChatroomId())) {
+						chatRoom = chatroomWindows.get(i);
+					}
+				}
+				//sets the message to the text area
+				chatRoom.getMessageArea().append(message + "\n");
+			}else if (line.contains("CHATROOMATTACHMENT")) {
+				String chatroomId = line.substring(19).split("\\, ")[0];
+				String sender = line.substring(19).split("\\, ")[1];
+				String fileName = line.substring(19).split("\\, ")[2];
+				String fileSize = line.substring(19).split("\\, ")[3];
+
+				ChatroomWindow chatroom = null;
+
+				//get the specific groupchat
+				for(int i=0; i<chatroomWindows.size();i++) {
+					System.out.println(chatroomId + " = " + chatroomWindows.get(i).getChatroomId());
+					if(chatroomId.equals(chatroomWindows.get(i).getChatroomId())) {
+						
+						chatroom = chatroomWindows.get(i);
+					}
+				}
+
+				if(!sender.equals(name)) {
+					int answer = JOptionPane.showConfirmDialog(
+							chatroom.getFrmChatroom(),
+							"Accept attachment " + fileName + " from " + sender + "?",
+							"Attachment",
+							JOptionPane.YES_NO_OPTION);
+
+					if(answer == 0)
+						saveFile(socket, fileName, Integer.parseInt(fileSize));		
+
+					chatroom.getMessageArea().append(sender + ": (Attachment: " +fileName+")" + "\n");
+				}
+
+			}else if (line.startsWith("CHATROOMLIST")) {
+				String online = line.substring(13);
+				chatroomList = online.substring(1, online.length()-1).split("\\, ");
+
+				model1.setRowCount(0);
+				model1.addRow(new Object[]{"Chatrooms:"});
+
+				for(int i=0; i<chatroomList.length; i++) {
+					model1.addRow(new Object[]{chatroomList[i]});
+				}
+
 			}/*else if (line.contains("CREATECHATROOM")){
 				String chatroomId = line.substring(15).split("\\,")[0];
-				
+
 				ChatroomWindow newChatroomWindow = new ChatroomWindow(socket, chatroomId, name, in, out, onlineList);
 				chatrooms.add(newChatroomWindow);
-				
+
 				//set the users table list
 				DefaultTableModel model = newChatroomWindow.getModel();
 				model.setRowCount(0);
-				
+
 				model.addRow(new Object[]{"Users:"});
 				model.addRow(new Object[]{name});
-				
+
 				newChatroomWindow.setModel(model);
 			}else if (line.contains("CHATROOMMESSAGE")){
 				String chatroomId = line.substring(16).split("\\,")[0];
