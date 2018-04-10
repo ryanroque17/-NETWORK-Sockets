@@ -27,6 +27,7 @@ import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableModel;
 
 
 public class Client {
@@ -35,10 +36,10 @@ public class Client {
 	private JFrame frame;
 	private JTextField messageField;
 	private JTable onlineTable;
-	private JButton sendButton, chatButton, attachButton, playButton;
+	private JButton sendButton, chatButton, attachButton, playButton, joinButton, createButton;
 	private JTextArea allChat;
 	private JLabel nameLabel, attachLabel;
-	private DefaultTableModel model;
+	private DefaultTableModel model, model1;
 	private JFileChooser fileChooser;
 
 	private String filePath;
@@ -51,17 +52,20 @@ public class Client {
 	private ArrayList<PrivateMessage> privateMessages = new ArrayList<>();
 	private ArrayList<GroupChatWindow> groupChats = new ArrayList<>();
 	private ArrayList<GameWindow> games = new ArrayList<>();
+	private ArrayList<ChatroomWindow> chatrooms = new ArrayList<>();
 
 	private Socket socket;
 	PrivateMessage currentPM = null;
 	GroupChatWindow currentGC = null;
+	ChatroomWindow currentCR = null;
+	private JTable chatroomTable;
 
 	public Client() {
 
 		// Layout GUI
 		frame = new JFrame();
 		frame.getContentPane().setBackground(new Color(0, 206, 209));
-		frame.setBounds(100, 100, 578, 374);
+		frame.setBounds(100, 100, 692, 374);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.getContentPane().setLayout(null);
 
@@ -141,7 +145,7 @@ public class Client {
 		sendButton = new JButton("Send");
 		sendButton.setForeground(new Color(255, 255, 255));
 		sendButton.setBackground(new Color(25, 25, 112));
-		sendButton.setBounds(446, 269, 95, 56);
+		sendButton.setBounds(446, 269, 202, 56);
 		sendButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				String message = messageField.getText();
@@ -263,6 +267,60 @@ public class Client {
 		onlineTable.setBounds(446, 36, 95, 220);
 		onlineTable.setDefaultEditor(Object.class, null);
 		frame.getContentPane().add(onlineTable);
+		
+		//create chatroom
+		JButton createButton = new JButton("Create");
+		createButton.setForeground(Color.WHITE);
+		createButton.setBackground(new Color(25, 25, 112));
+		createButton.setBounds(553, 235, 95, 28);
+		frame.getContentPane().add(createButton);
+		createButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String chatroomName;
+				
+				chatroomName = JOptionPane.showInputDialog(
+						frame,
+						"Enter Chat Room Name",
+						"Create Chat Room",
+						JOptionPane.PLAIN_MESSAGE);
+				out.println("CREATECHATROOM " + chatroomName);
+			}
+		});
+		
+		//join chatroom
+		joinButton = new JButton("Join");
+		joinButton.setForeground(Color.WHITE);
+		joinButton.setBackground(new Color(25, 25, 112));
+		joinButton.setBounds(553, 206, 95, 28);
+		frame.getContentPane().add(joinButton);
+		joinButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String password;
+				int row = chatroomTable.getSelectedRow();
+				Boolean passwordChecker = false;
+				
+				/* check if Password is correct
+				password = JOptionPane.showInputDialog(
+						frame,
+						"Enter password:",
+						"Join Chatroom",
+						JOptionPane.PLAIN_MESSAGE);
+				if
+				*/
+				out.println("JOINCHATROOM " + name + "," + row);
+				
+			}
+		});
+		
+		model1 = new DefaultTableModel();
+		chatroomTable = new JTable(model1);
+		chatroomTable.setBackground(new Color(240, 248, 255));
+		chatroomTable.setBounds(553, 36, 95, 220);
+		chatroomTable.setDefaultEditor(Object.class, null);
+		frame.getContentPane().add(chatroomTable);
+		
+		model1.addColumn("Chatrooms:");
+		model1.addRow(new Object[]{"Chatrooms:"});
 
 		model.addColumn("Online List:");
 		model.addRow(new Object[]{"Online List:"});
@@ -572,7 +630,65 @@ public class Client {
 				}
 				
 				currentGame.enemyQuitted();
-			}
+			}/*else if (line.contains("CREATECHATROOM")){
+				String chatroomId = line.substring(15).split("\\,")[0];
+				
+				ChatroomWindow newChatroomWindow = new ChatroomWindow(socket, chatroomId, name, in, out, onlineList);
+				chatrooms.add(newChatroomWindow);
+				
+				//set the users table list
+				DefaultTableModel model = newChatroomWindow.getModel();
+				model.setRowCount(0);
+				
+				model.addRow(new Object[]{"Users:"});
+				model.addRow(new Object[]{name});
+				
+				newChatroomWindow.setModel(model);
+			}else if (line.contains("CHATROOMMESSAGE")){
+				String chatroomId = line.substring(16).split("\\,")[0];
+				String message = line.substring(16).split("\\,")[1];
+
+				ChatroomWindow chatRoom = null;
+				//gets the specific chatroomWindow
+				for(int i=0; i<chatrooms.size();i++) {
+					if(chatroomId.equals(chatrooms.get(i).getChatroomId())) {
+						chatRoom = chatrooms.get(i);
+					}
+				}
+				//sets the message to the text area
+				chatRoom.getMessageArea().append(message + "\n");
+			}else if (line.contains("CHATROOMATTACHMENT")) {
+				String chatroomId = line.substring(19).split("\\, ")[0];
+				String sender = line.substring(19).split("\\, ")[1];
+				String fileName = line.substring(19).split("\\, ")[2];
+				String fileSize = line.substring(19).split("\\, ")[3];
+
+				ChatroomWindow chatRoom = null;
+
+				//get the specific chatroom
+				for(int i=0; i<chatrooms.size();i++) {
+					if(chatroomId.equals(chatrooms.get(i).getChatroomId())) {
+						chatRoom = chatrooms.get(i);
+					}
+				}
+
+				if(!sender.equals(name)) {
+					int answer = JOptionPane.showConfirmDialog(
+							chatRoom.getFrmChatroom(),
+							"Accept attachment " + fileName + " from " + sender + "?",
+							"Attachment",
+							JOptionPane.YES_NO_OPTION);
+					currentCR = chatRoom;
+					if(answer == 0)
+						saveFile(socket, fileName, Integer.parseInt(fileSize));		
+
+					currentCR.getMessageArea().append(sender + ": (Attachment: " +fileName+")" + "\n");
+					currentCR = null;
+				}
+				allChat.append(sender + ": (Attachment: " +fileName+")" + "\n");
+			}else if (line.contains("JOINCHATROOM")){
+				//check if password is correct
+			}*/
 		}
 	}
 
@@ -631,6 +747,9 @@ public class Client {
 					"File saved in [Client]" + name + " folder!");
 		else if(currentGC!=null)
 			JOptionPane.showMessageDialog(currentGC.getFrmGroupChat(),
+					"File saved in [Client]" + name + " folder!");
+		else if(currentCR!=null)
+			JOptionPane.showMessageDialog(currentCR.getFrmChatroom(),
 					"File saved in [Client]" + name + " folder!");
 		//				fos.close();
 		//				dis.close();
