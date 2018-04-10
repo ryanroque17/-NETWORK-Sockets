@@ -35,7 +35,7 @@ public class Client {
 	private JFrame frame;
 	private JTextField messageField;
 	private JTable onlineTable;
-	private JButton sendButton, chatButton, attachButton;
+	private JButton sendButton, chatButton, attachButton, playButton;
 	private JTextArea allChat;
 	private JLabel nameLabel, attachLabel;
 	private DefaultTableModel model;
@@ -50,6 +50,7 @@ public class Client {
 	private String[] onlineList;
 	private ArrayList<PrivateMessage> privateMessages = new ArrayList<>();
 	private ArrayList<GroupChatWindow> groupChats = new ArrayList<>();
+	private ArrayList<GameWindow> games = new ArrayList<>();
 
 	private Socket socket;
 	PrivateMessage currentPM = null;
@@ -63,6 +64,38 @@ public class Client {
 		frame.setBounds(100, 100, 578, 374);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.getContentPane().setLayout(null);
+
+		playButton = new JButton("Play");
+		playButton.setForeground(new Color(255, 255, 255));
+		playButton.setBackground(new Color(25, 25, 112));
+		playButton.setBounds(330, 233, 95, 28);
+		playButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String choice = "";
+				while(true) {
+					choice = (String)JOptionPane.showInputDialog(
+							frame,
+							"Invite another player:",
+							"Play TicTacToe",
+							JOptionPane.PLAIN_MESSAGE,
+							null,
+							onlineList,
+							onlineList[0]);
+
+					if(choice.equals(name)) {
+						JOptionPane.showMessageDialog(frame,
+								"Give others a chance to play with you!",
+								"Error",
+								JOptionPane.ERROR_MESSAGE);
+					}else
+						break;
+				}
+				
+				out.println("INVITEGAME " + name + ", " + choice);
+
+			}
+		});
+		frame.getContentPane().add(playButton);
 
 		attachButton = new JButton("Attach");
 		attachButton.setForeground(new Color(255, 255, 255));
@@ -413,7 +446,7 @@ public class Client {
 					currentGC = groupChat;
 					if(answer == 0)
 						saveFile(socket, fileName, Integer.parseInt(fileSize));		
-					
+
 					currentGC.getMessageArea().append(sender + ": (Attachment: " +fileName+")" + "\n");
 					currentGC = null;
 				}
@@ -482,6 +515,52 @@ public class Client {
 				if(answer == 0)
 					saveFile(socket, fileName, Integer.parseInt(fileSize));		
 				currentPM=null;
+			} else if (line.contains("INVITEGAME")) {
+				String gameId = line.substring(11).split("\\, ")[0];
+				String senderName = line.substring(11).split("\\, ")[1];
+				String invitedPlayer = line.substring(11).split("\\, ")[2];
+				
+				GameWindow newGameWindow = null;
+				if(!name.equals(senderName)) {
+					 newGameWindow = new GameWindow(gameId, invitedPlayer, senderName, "O", in, out);
+				}else {
+					 newGameWindow = new GameWindow(gameId, senderName, invitedPlayer, "X", in, out);
+					 newGameWindow.setTurn(true);
+				}
+				
+				games.add(newGameWindow);
+
+			}else if (line.contains("PLAYERMOVE")) {
+				String gameId = line.substring(11).split("\\, ")[0];
+				String buttonIndex = line.substring(11).split("\\, ")[1];
+				
+				GameWindow currentGame = null;
+				for(int i=0; i<games.size();i++) {
+					System.out.println(gameId + " = " + games.get(i).getGameId());
+					if(gameId.equals(games.get(i).getGameId())) {
+						currentGame = games.get(i);
+					}
+				}
+				
+				if(currentGame.getCharacter().equals("X"))
+					currentGame.getButtons().get(Integer.parseInt(buttonIndex)).setText("O");
+				else
+					currentGame.getButtons().get(Integer.parseInt(buttonIndex)).setText("X");
+
+				currentGame.setTurn(true);
+
+			}else if (line.contains("GAMERESULT")) {
+				String gameId = line.substring(11).split("\\, ")[0];
+				
+				GameWindow currentGame = null;
+				for(int i=0; i<games.size();i++) {
+					System.out.println(gameId + " = " + games.get(i).getGameId());
+					if(gameId.equals(games.get(i).getGameId())) {
+						currentGame = games.get(i);
+					}
+				}
+				currentGame.showDefeat();
+						
 			}
 		}
 	}

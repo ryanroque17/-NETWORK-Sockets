@@ -24,6 +24,8 @@ public class SocketHandler extends Thread {
 	private static ArrayList<BufferedReader> readers = new ArrayList<BufferedReader>();
 	private static ArrayList<Socket> sockets = new ArrayList<Socket>();
 	private static ArrayList<GroupChat> groupChats = new ArrayList<GroupChat>();
+	private static ArrayList<Game> games = new ArrayList<Game>();
+
 	public SocketHandler(Socket socket) {
 		this.socket = socket;
 	}
@@ -236,6 +238,30 @@ public class SocketHandler extends Thread {
 
 						writer.println("MESSAGE " + name + ": " + message);
 					}
+				}else if(input.contains("INVITEGAME")) {
+					String sender = input.substring(11).split("\\, ")[0];
+					String invitedPlayer = input.substring(11).split("\\, ")[1];
+					
+					String players[] = new String[2];
+					players[0] = sender;
+					players[1] = invitedPlayer;
+					
+					Game newGame = new Game(players);
+					games.add(newGame);
+					
+					writers.get(names.indexOf(sender)).println("INVITEGAME " + newGame.getGameId() + ", " +  sender + ", " + invitedPlayer);
+					writers.get(names.indexOf(invitedPlayer)).println("INVITEGAME " + newGame.getGameId() + ", " +  sender + ", " + invitedPlayer);
+				}else if(input.contains("PLAYERMOVE")) {
+					String gameId = input.substring(11).split("\\, ")[0];
+					String nextPlayer = input.substring(11).split("\\, ")[1];
+					String buttonIndex = input.substring(11).split("\\, ")[2];
+					
+					writers.get(names.indexOf(nextPlayer)).println("PLAYERMOVE " + gameId + ", " + buttonIndex);
+				}else if(input.contains("GAMERESULT")) {
+					String gameId = input.substring(11).split("\\, ")[0];
+					String player = input.substring(11).split("\\, ")[1];
+					
+					writers.get(names.indexOf(player)).println("GAMERESULT " + gameId);
 				}
 
 
