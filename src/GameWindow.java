@@ -2,6 +2,7 @@ import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.io.BufferedReader;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -21,10 +22,12 @@ public class GameWindow
 	private PrintWriter out;
 
 	private Boolean turn = false;
+	private Boolean isQuit = true;
 	
 	private JFrame window;
 	private JPanel panel = new JPanel();
-
+	
+	
 	ArrayList<JButton> buttons = new ArrayList<JButton>();
 	int alternate = 0;//if this number is a even, then put a X. If it's odd, then put an O
 
@@ -45,7 +48,54 @@ public class GameWindow
         window.getContentPane().add(panel);
 		window.setBounds(600,400,600,600);
 		window.setVisible(true);
-	}
+		
+		window.addWindowListener(new WindowListener() {
+
+			@Override
+			public void windowOpened(WindowEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void windowClosing(WindowEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void windowClosed(WindowEvent e) {
+				// TODO Auto-generated method stub
+				if(isQuit)
+					out.println("QUITGAME " + gameId + ", " + enemy);
+
+			}
+
+			@Override
+			public void windowIconified(WindowEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void windowDeiconified(WindowEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void windowActivated(WindowEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void windowDeactivated(WindowEvent e) {
+				// TODO Auto-generated method stub
+				
+			}	
+			});
+		}
 
 	public void initializebuttons()
 	{
@@ -86,9 +136,9 @@ public class GameWindow
 					out.println("GAMERESULT " + gameId + ", " + enemy);
 
 					JOptionPane.showMessageDialog(window,
-							"You won!! Click ok to close game");
+							"You won!! Click ok to close the game");
 					window.dispatchEvent(new WindowEvent(window, WindowEvent.WINDOW_CLOSING));
-
+					isQuit = false;
 				}
 				setTurn(false);
 			}else
@@ -134,7 +184,7 @@ public class GameWindow
 				return false;
 		}
 
-
+		
 
 	}
 
@@ -197,7 +247,16 @@ public class GameWindow
 	
 	public void showDefeat() {
 		JOptionPane.showMessageDialog(window,
-				"You lost!! Click ok to close game");	
+				"You lost!! Click ok to close the game");	
+		window.dispatchEvent(new WindowEvent(window, WindowEvent.WINDOW_CLOSING));
+		isQuit = false;
+	}
+	
+	public void enemyQuitted() {
+		JOptionPane.showMessageDialog(window,
+				enemy + " has left the game. You won! Click ok to close the game");	
+		window.dispatchEvent(new WindowEvent(window, WindowEvent.WINDOW_CLOSING));
+		isQuit = false;
 	}
 
 }

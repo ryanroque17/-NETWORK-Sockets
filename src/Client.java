@@ -241,12 +241,12 @@ public class Client {
 
 					String groupChatUsers = Arrays.toString(row);
 					groupChatUsers = groupChatUsers.substring(1, groupChatUsers.length()-1);
-					System.out.println("groupChatUsersb " +groupChatUsers);
+					//System.out.println("groupChatUsersb " +groupChatUsers);
 
 					groupChatUsers = groupChatUsers + ", " + userIndex;
-					System.out.println("groupChatUsers " +groupChatUsers);
+					//System.out.println("groupChatUsers " +groupChatUsers);
 					//System.out.println("ey" + groupChatUsers.substring(1, groupChatUsers.length()-1));
-					System.out.println("INITIATEGC " + groupChatUsers);
+					//System.out.println("INITIATEGC " + groupChatUsers);
 					out.println("INITIATEGC " + groupChatUsers);
 				}
 			}
@@ -404,7 +404,7 @@ public class Client {
 
 				//get the specific groupchat
 				for(int i=0; i<groupChats.size();i++) {
-					System.out.println(groupChatId + " = " + groupChats.get(i).getGroupChatId());
+					//System.out.println(groupChatId + " = " + groupChats.get(i).getGroupChatId());
 					if(groupChatId.equals(groupChats.get(i).getGroupChatId())) {
 						groupChat = groupChats.get(i);
 					}
@@ -431,7 +431,7 @@ public class Client {
 
 				//get the specific groupchat
 				for(int i=0; i<groupChats.size();i++) {
-					System.out.println(groupChatId + " = " + groupChats.get(i).getGroupChatId());
+					//System.out.println(groupChatId + " = " + groupChats.get(i).getGroupChatId());
 					if(groupChatId.equals(groupChats.get(i).getGroupChatId())) {
 						groupChat = groupChats.get(i);
 					}
@@ -471,8 +471,8 @@ public class Client {
 				String senderName = line.substring(18).split("\\,")[0];
 				String recepientName = line.substring(18).split("\\,")[1];
 
-				System.out.println("senderpa " + senderName);
-				System.out.println("recepientpa " + recepientName);
+				//System.out.println("senderpa " + senderName);
+				//System.out.println("recepientpa " + recepientName);
 
 				String fileName = line.substring(18).split("\\,")[2];
 				String fileSize = line.substring(18).split("\\,")[3];
@@ -536,7 +536,7 @@ public class Client {
 				
 				GameWindow currentGame = null;
 				for(int i=0; i<games.size();i++) {
-					System.out.println(gameId + " = " + games.get(i).getGameId());
+				//	System.out.println(gameId + " = " + games.get(i).getGameId());
 					if(gameId.equals(games.get(i).getGameId())) {
 						currentGame = games.get(i);
 					}
@@ -554,13 +554,24 @@ public class Client {
 				
 				GameWindow currentGame = null;
 				for(int i=0; i<games.size();i++) {
-					System.out.println(gameId + " = " + games.get(i).getGameId());
+				//	System.out.println(gameId + " = " + games.get(i).getGameId());
 					if(gameId.equals(games.get(i).getGameId())) {
 						currentGame = games.get(i);
 					}
 				}
 				currentGame.showDefeat();
-						
+			}else if (line.contains("QUITGAME")) {
+				String gameId = line.substring(9).split("\\, ")[0];
+				
+				GameWindow currentGame = null;
+				for(int i=0; i<games.size();i++) {
+				//	System.out.println(gameId + " = " + games.get(i).getGameId());
+					if(gameId.equals(games.get(i).getGameId())) {
+						currentGame = games.get(i);
+					}
+				}
+				
+				currentGame.enemyQuitted();
 			}
 		}
 	}
@@ -586,7 +597,7 @@ public class Client {
 		File serverFolder = new File(filepath);
 		serverFolder.mkdirs();
 		filepath = filepath + "/" + filename;
-		System.out.println("filepath" + filepath);
+		//System.out.println("filepath" + filepath);
 		FileOutputStream fos = new FileOutputStream(filepath);
 
 		byte[] buffer = new byte[4096];
@@ -604,10 +615,14 @@ public class Client {
 
 		}
 		fos.flush();
-		//clientSock.getOutputStream().flush();
+		clientSock.getOutputStream().flush();
+		out.flush();
+		out.println("");
+		out.println("");
+		out.println("");
 
 		fos.close();
-		System.out.println("file saved from server " + System.currentTimeMillis() % 1000);
+		//System.out.println("file saved from server " + System.currentTimeMillis() % 1000);
 		if(currentPM==null && currentGC==null)
 			JOptionPane.showMessageDialog(frame,
 					"File saved in [Client]" + name + " folder!");

@@ -60,6 +60,7 @@ public class SocketHandler extends Thread {
 			out.println("NAMEACCEPTED");
 
 			while (true) {
+				out.println("");
 				String input = in.readLine();
 				if (input == null) {
 					return;
@@ -69,13 +70,13 @@ public class SocketHandler extends Thread {
 					// recepientName = names.get(Integer.parseInt(pmUsers[1])-1));
 					writers.get(names.indexOf(pmUsers[0])).println("INITIATEPM " + names.get(Integer.parseInt(pmUsers[1])-1));
 				}else if(input.contains("PRIVATEMESSAGE")){
-					System.out.println("input pm" + input);
+					//System.out.println("input pm" + input);
 					String senderName = input.substring(15).split("\\,")[0];
 					String recepientName = input.substring(15).split("\\,")[1];
 					String message = input.substring(15).split("\\,")[2];
 
-					System.out.println("senderName" + senderName + "|index: " + names.indexOf(senderName));
-					System.out.println("recepientName" + recepientName+ "|index: " + names.indexOf(recepientName));
+					//System.out.println("senderName" + senderName + "|index: " + names.indexOf(senderName));
+					//System.out.println("recepientName" + recepientName+ "|index: " + names.indexOf(recepientName));
 
 					writers.get(names.indexOf(senderName)).println("");
 					writers.get(names.indexOf(recepientName)).println("");
@@ -107,7 +108,7 @@ public class SocketHandler extends Thread {
 					String[] gcUserNames = new String[gcUsers.length];
 					for(int i=0; i<gcUsers.length; i++) {
 						int index = Integer.parseInt(gcUsers[i]);
-						System.out.println(index);
+						//System.out.println(index);
 						gcUserNames[i] = names.get(index-1);
 					}
 					String names = Arrays.toString(gcUserNames);
@@ -116,7 +117,7 @@ public class SocketHandler extends Thread {
 					//send the groupchatId and the list of the users to the clients of the GC
 					for(int i=0; i<gcUsers.length; i++) {
 						int index = Integer.parseInt(gcUsers[i]);
-						System.out.println(index);
+						//System.out.println(index);
 						writers.get(index-1).println("INITIATEGC " + newGroupChat.getGroupChatId() + ", " +gcUserNamesList);
 					}
 
@@ -159,13 +160,13 @@ public class SocketHandler extends Thread {
 
 					for(int i=0; i<groupChatUsers.length; i++) {
 						int index = Integer.parseInt(groupChatUsers[i]);
-						System.out.println(index);
+						//System.out.println(index);
 						newGcUsers[i] = groupChatUsers[i];
 						newGcUserNames[i] = names.get(index-1);
 					}
 					newGcUserNames[newGcUserNames.length-1] = invitedUser;
-					System.out.println("index of invited " + names.indexOf(invitedUser));
-					System.out.println("invited user" +invitedUser);
+//					System.out.println("index of invited " + names.indexOf(invitedUser));
+//					System.out.println("invited user" +invitedUser);
 
 					newGcUsers[newGcUsers.length-1] = (names.indexOf(invitedUser)+1) +"";
 
@@ -179,7 +180,7 @@ public class SocketHandler extends Thread {
 					//sends the invite to the invited user
 					for(int i=0; i<newGcUsers.length; i++) {
 						int index = Integer.parseInt(newGcUsers[i]);
-						System.out.println("index" + (index-1));
+//						System.out.println("index" + (index-1));
 						writers.get(index-1).println("GROUPCHATINVITE " + groupChatId + ", " + invitedUser + ", "+ gcUserNamesList);
 					}
 
@@ -218,8 +219,8 @@ public class SocketHandler extends Thread {
 
 					saveFile(socket, fileName, Integer.parseInt(fileSize));
 
-					System.out.println("sender : " + sender);
-					System.out.println("sender index: " + names.indexOf(sender));
+//					System.out.println("sender : " + sender);
+//					System.out.println("sender index: " + names.indexOf(sender));
 
 					for(int i=0; i<writers.size();i++) {
 						if(names.indexOf(sender) != i) {
@@ -230,9 +231,9 @@ public class SocketHandler extends Thread {
 
 
 				}else if(input.contains("GLOBALMESSAGE")){
-					System.out.println("input " + input);
+					//System.out.println("input " + input);
 					String message = input.substring(14).split("\\, ")[0];
-					System.out.println(name + " glob " + message);
+					//System.out.println(name + " glob " + message);
 					for (PrintWriter writer : writers) {
 						writer.println("");
 
@@ -262,6 +263,11 @@ public class SocketHandler extends Thread {
 					String player = input.substring(11).split("\\, ")[1];
 					
 					writers.get(names.indexOf(player)).println("GAMERESULT " + gameId);
+				}else if(input.contains("QUITGAME")) {
+					String gameId = input.substring(9).split("\\, ")[0];
+					String player = input.substring(9).split("\\, ")[1];
+					
+					writers.get(names.indexOf(player)).println("QUITGAME " + gameId);
 				}
 
 
@@ -281,7 +287,7 @@ public class SocketHandler extends Thread {
 				writers.remove(out);
 			}
 			try {
-				System.out.println("socketClosed");
+				//System.out.println("socketClosed");
 				socket.close();
 			} catch (IOException e) {
 				System.out.println("ERROR " + e);
@@ -298,7 +304,7 @@ public class SocketHandler extends Thread {
 		}
 		dos.flush();
 		fis.close();
-		System.out.println("file sent from server " + System.currentTimeMillis() % 1000);
+		//System.out.println("file sent from server " + System.currentTimeMillis() % 1000);
 		//		try {
 		//			//this.sleep(5000);
 		//		} catch (InterruptedException e) {
